@@ -43,10 +43,16 @@ async function squiggleFetch(query: string): Promise<{ games?: SquiggleGame[] }>
 
 export async function getCurrentRound() {
   const year = new Date().getFullYear()
-  const data = await squiggleFetch(`?q=games;year=${year};upcoming=1`)
-  if (!data.games?.length) throw new Error('No upcoming games found in Squiggle API')
-  const { round } = data.games[0]
+  const data = await squiggleFetch(`?q=games;year=${year}`)
+  if (!data.games?.length) throw new Error('No games found for current year')
+
+  // Find the lowest round number where not all games are complete
+  const incomplete = data.games.filter(g => g.complete < 100)
+  if (!incomplete.length) throw new Error('No upcoming games found')
+
+  const round = Math.min(...incomplete.map(g => g.round))
   return getRoundGames(year, round)
+}
 }
 
 export async function getRoundGames(year: number, round: number) {
