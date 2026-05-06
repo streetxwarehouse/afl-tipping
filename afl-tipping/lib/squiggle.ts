@@ -50,7 +50,7 @@ export async function getCurrentRound() {
   const incomplete = data.games.filter(g => g.complete < 100)
   if (!incomplete.length) throw new Error('No upcoming games found')
 
-  const round = Math.min(...incomplete.map(g => g.round))
+ const round = Math.min(...incomplete.map(function(g) { return g.round }))
   return getRoundGames(year, round)
 }
 }
