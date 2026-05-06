@@ -42,9 +42,10 @@ async function squiggleFetch(query: string): Promise<{ games?: SquiggleGame[] }>
 }
 
 export async function getCurrentRound() {
-  const data = await squiggleFetch('?q=games;upcoming=1')
+  const year = new Date().getFullYear()
+  const data = await squiggleFetch(`?q=games;year=${year};upcoming=1`)
   if (!data.games?.length) throw new Error('No upcoming games found in Squiggle API')
-  const { round, year } = data.games[0]
+  const { round } = data.games[0]
   return getRoundGames(year, round)
 }
 
