@@ -7,9 +7,9 @@ export interface SquiggleGame {
   ateam: string
   hteamid: number
   ateamid: number
-  date: string  // "2025-03-13 19:50:00" in local Melbourne time
-  tz: string    // "AEDT" | "AEST" | "ACDT" etc
-  complete: number // 0–100
+  date: string
+  tz: string
+  complete: number
   winner: string | null
   winnerteamid: number | null
   hscore: number | null
@@ -44,25 +44,29 @@ async function squiggleFetch(query: string): Promise<{ games?: SquiggleGame[] }>
 export async function getCurrentRound() {
   const year = new Date().getFullYear()
   const data = await squiggleFetch(`?q=games;year=${year}`)
-  if (!data.games?.length) throw new Error('No games found for current year')
+  if (!data.games || data.games.length === 0) throw new Error('No games found for current year')
 
-  // Find the lowest round number where not all games are complete
-  const incomplete = data.games.filter(g => g.complete < 100)
-  if (!incomplete.length) throw new Error('No upcoming games found')
+  const incomplete = data.games.filter(function(g) { return g.complete < 100 })
+  if (incomplete.length === 0) throw new Error('No upcoming games found')
 
- const round = Math.min(...incomplete.map(function(g) { return g.round }))
-  return getRoundGames(year, round)
-}
+  let minRound = incomplete[0].round
+  for (let i = 1; i < incomplete.length; i++) {
+    if (incomplete[i].round < minRound) minRound = incomplete[i].round
+  }
+
+  return getRoundGames(year, minRound)
 }
 
 export async function getRoundGames(year: number, round: number) {
   const data = await squiggleFetch(`?q=games;year=${year};round=${round}`)
   const games = (data.games ?? [])
-    .filter(g => g.hteam && g.ateam && g.hteamid && g.ateamid)
-    .sort((a, b) => parseGameTime(a.date, a.tz).getTime() - parseGameTime(b.date, b.tz).getTime())
+    .filter(function(g) { return g.hteam && g.ateam && g.hteamid && g.ateamid })
+    .sort(function(a, b) { return parseGameTime(a.date, a.tz).getTime() - parseGameTime(b.date, b.tz).getTime() })
 
   if (!games.length) throw new Error(`No games found for ${year} Round ${round}`)
 
   const firstGameTime = parseGameTime(games[0].date, games[0].tz)
   return { year, round, games, firstGameTime }
 }
+
+
